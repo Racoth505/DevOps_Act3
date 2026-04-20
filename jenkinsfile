@@ -1,40 +1,46 @@
 pipeline {
     agent any
     
+    environment {
+        // ACTUALIZA ESTA IP CADA VEZ QUE INICIES EL LABORATORIO
+        PROD_IP = '172.31.73.46' 
+        DOCKER_USER = 'Docker'
+        IMAGE_NAME = 'malvados-app'
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                // Descarga el código
+                // Jenkins usa automáticamente 'github-creds' si lo configuraste en el Job
                 checkout scm
             }
         }
-        
-        stage('Build Image') {
+
+        stage('Build & Push') {
             steps {
                 script {
-                    // Construye la imagen usando el Docker de la instancia EC2
-                    sh "docker build -t tu-usuario-dockerhub/Act3-Dev:latest ."
-                }
-            }
-        }
-        
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    // Login y subida (opcional pero recomendado)
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        sh "echo $PASS | docker login -u $USER --password-stdin"
-                        sh "docker push $USER/Act3-Dev:latest"
+                    // Usamos la credencial de Docker Hub para el login
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER_ENV')]) {
+                        sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:latest ."
+                        sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER_ENV --password-stdin"
+                        sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
                     }
                 }
             }
         }
 
-        stage('Deploy to Prod') {
+        stage('Deploy') {
             steps {
-                // Aquí usamos el SSH Agent para entrar a la otra EC2 y actualizar
+                // Usamos la credencial del archivo .pem (prod-server-key)
                 sshagent(['prod-server-key']) {
-                    sh "ssh -o StrictHostKeyChecking=no ec2-user@IP_PRIVADA_PROD 'docker pull tu-usuario/Act3-Dev:latest && docker run -d -p 5000:5000 tu-usuario/Act3-Dev:latest'"
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ec2-user@${PROD_IP} '
+                        docker pull ${DOCKER_USER}/${IMAGE_NAME}:latest &&
+                        docker stop my-app || true &&
+                        docker rm my-app || true &&
+                        docker run -d --name my-app -p 5000:5000 ${DOCKER_USER}/${IMAGE_NAME}:latest
+                    '
+                    """
                 }
             }
         }
