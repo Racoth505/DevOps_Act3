@@ -13,7 +13,7 @@ pipeline {
             steps {
                 script {
                     // Construye la imagen usando el Docker de la instancia EC2
-                    sh "docker build -t tu-usuario/Act3-Dev:latest ."
+                    sh "docker build -t tu-usuario-dockerhub/Act3-Dev:latest ."
                 }
             }
         }
