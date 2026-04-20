@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                // Entramos a la carpeta 'app' para construir la imagen
+                dir('app') {
+                    sh 'docker build -t mi-app-universidad:latest .'
+                }
+            }
+        }
+
+        stage('Deploy with Docker Compose') {
+            steps {
+                // Entramos a 'app' para levantar el compose
+                dir('app') {
+                    sh 'docker-compose up -d'
+                }
+            }
+        }
+    }
+}
