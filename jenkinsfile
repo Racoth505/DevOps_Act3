@@ -1,27 +1,40 @@
 pipeline {
     agent any
-
+    
     stages {
         stage('Checkout') {
             steps {
+                // Descarga el código
                 checkout scm
             }
         }
-
-        stage('Build Docker Image') {
+        
+        stage('Build Image') {
             steps {
-                // Entramos a la carpeta 'app' para construir la imagen
-                dir('app') {
-                    sh 'docker build -t mi-app-universidad:latest .'
+                script {
+                    // Construye la imagen usando el Docker de la instancia EC2
+                    sh "docker build -t tu-usuario/Act3-Dev:latest ."
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    // Login y subida (opcional pero recomendado)
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh "echo $PASS | docker login -u $USER --password-stdin"
+                        sh "docker push $USER/Act3-Dev:latest"
+                    }
                 }
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy to Prod') {
             steps {
-                // Entramos a 'app' para levantar el compose
-                dir('app') {
-                    sh 'docker-compose up -d'
+                // Aquí usamos el SSH Agent para entrar a la otra EC2 y actualizar
+                sshagent(['prod-server-key']) {
+                    sh "ssh -o StrictHostKeyChecking=no ec2-user@IP_PRIVADA_PROD 'docker pull tu-usuario/Act3-Dev:latest && docker run -d -p 5000:5000 tu-usuario/Act3-Dev:latest'"
                 }
             }
         }
