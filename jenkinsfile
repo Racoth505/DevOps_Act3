@@ -5,7 +5,6 @@ pipeline {
         // ACTUALIZA ESTA IP CADA VEZ QUE INICIES EL LABORATORIO
         PROD_IP = '172.31.73.46' 
         DOCKER_USER = 'rafaflores'
-
         IMAGE_NAME = 'malvados-app'
     }
 
