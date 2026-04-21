@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         // ACTUALIZA ESTA IP CADA VEZ QUE INICIES EL LABORATORIO
-        PROD_IP = '172.31.72.195' 
+        PROD_IP = '3.238.180.68' 
         DOCKER_USER = 'rafaflores'
         IMAGE_NAME = 'malvados-app'
     }
